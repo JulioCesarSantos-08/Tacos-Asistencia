@@ -1,0 +1,535 @@
+
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101811">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TO Asistencias">
+  <meta name="description" content="Panel personal de asistencia de Tacos Orientales.">
+  <title>Mi asistencia | Tacos Orientales</title>
+  <link rel="icon" type="image/png" href="imagenes/logo.png">
+  <link rel="apple-touch-icon" href="imagenes/logo.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/empleado.css">
+</head>
+<body class="pagina-empleado">
+
+  <div id="pantallaCarga" class="empleado-pantalla-carga">
+    <div class="pantalla-carga-contenido">
+      <img src="imagenes/logo.png" alt="Tacos Orientales" class="pantalla-carga-logo">
+      <span class="cargando-circular"></span>
+      <p>Preparando tu espacio de trabajo...</p>
+    </div>
+  </div>
+
+  <div id="aplicacionEmpleado" class="empleado-aplicacion" hidden>
+
+    <header class="empleado-header">
+
+      <div class="empleado-header-interior">
+
+        <a href="empleado.html" class="empleado-marca" aria-label="Inicio de mi asistencia">
+          <img src="imagenes/logo.png" alt="Tacos Orientales">
+          <div>
+            <strong>TACOS ORIENTALES</strong>
+            <span>ASISTENCIA DEL PERSONAL</span>
+          </div>
+        </a>
+
+        <div class="empleado-header-acciones">
+
+          <div class="empleado-conexion" id="estadoConexion">
+            <span class="conexion-punto"></span>
+            <span id="textoConexion">Conectando</span>
+          </div>
+
+          <button type="button" id="botonPerfil" class="empleado-avatar-boton" aria-label="Ver mi perfil">
+            <span id="avatarIniciales">TO</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </header>
+
+    <main class="empleado-main">
+
+      <section class="empleado-bienvenida">
+
+        <div class="bienvenida-superior">
+          <span class="bienvenida-etiqueta">
+            <span class="bienvenida-etiqueta-punto"></span>
+            MI ESPACIO DE TRABAJO
+          </span>
+
+          <span id="fechaActualCorta" class="bienvenida-fecha">Cargando fecha...</span>
+        </div>
+
+        <div class="bienvenida-contenido">
+
+          <div class="bienvenida-textos">
+            <p id="saludoHorario" class="bienvenida-saludo">¡Bienvenido!</p>
+            <h1 id="nombreEmpleado">Cargando empleado...</h1>
+            <p class="bienvenida-descripcion">
+              Cada jornada cuenta. Registra tu asistencia
+              y consulta tu actividad desde aquí.
+            </p>
+          </div>
+
+          <div class="bienvenida-ilustracion" aria-hidden="true">
+            <div class="ilustracion-circulo"></div>
+            <div id="ilustracionRol" class="ilustracion-icono">🌮</div>
+          </div>
+
+        </div>
+
+        <div class="bienvenida-inferior">
+
+          <div class="bienvenida-puesto">
+            <span class="puesto-icono" id="iconoRol">🌮</span>
+            <div>
+              <small>MI PUESTO</small>
+              <strong id="nombreRol">Cargando...</strong>
+            </div>
+          </div>
+
+          <div class="bienvenida-estado">
+            <span class="bienvenida-estado-punto"></span>
+            <span>PERSONAL AUTORIZADO</span>
+          </div>
+
+        </div>
+
+      </section>
+
+      <section class="empleado-reloj-seccion">
+
+        <div class="empleado-reloj-tarjeta">
+
+          <div class="reloj-tarjeta-superior">
+
+            <div class="reloj-tarjeta-etiqueta">
+              <span class="reloj-tarjeta-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="M12 7v5l3 2"></path>
+                </svg>
+              </span>
+
+              <div>
+                <span>RELOJ DE ASISTENCIA</span>
+                <small>Horario de Oaxaca</small>
+              </div>
+            </div>
+
+            <span class="reloj-en-vivo">
+              <span></span>
+              EN VIVO
+            </span>
+
+          </div>
+
+          <div class="reloj-tarjeta-centro">
+            <strong id="relojEmpleado">--:--:--</strong>
+            <span id="fechaEmpleado">Cargando fecha...</span>
+          </div>
+
+          <div class="reloj-tarjeta-pie">
+            <span class="reloj-aviso-icono">i</span>
+            <p>La hora oficial de tu asistencia se registrará en el servidor.</p>
+          </div>
+
+        </div>
+
+      </section>
+
+      <section class="empleado-jornada-seccion">
+
+        <div class="empleado-seccion-encabezado">
+          <div>
+            <span class="seccion-sobretitulo">CONTROL DE JORNADA</span>
+            <h2>Mi asistencia de hoy</h2>
+          </div>
+
+          <span id="insigniaJornada" class="insignia insignia-oscura">
+            Sin consultar
+          </span>
+        </div>
+
+        <div class="jornada-tarjeta">
+
+          <div class="jornada-estado">
+
+            <div id="jornadaEstadoIcono" class="jornada-estado-icono">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 7v5l3 2"></path>
+              </svg>
+            </div>
+
+            <div class="jornada-estado-textos">
+              <span>ESTADO ACTUAL</span>
+              <h3 id="textoEstadoJornada">Consultando asistencia...</h3>
+              <p id="descripcionEstadoJornada">
+                Estamos verificando tu jornada.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="jornada-horarios">
+
+            <div class="jornada-horario">
+              <span class="horario-indicador entrada"></span>
+              <div>
+                <small>HORA DE ENTRADA</small>
+                <strong id="horaEntrada">--:--</strong>
+              </div>
+            </div>
+
+            <div class="jornada-horario">
+              <span class="horario-indicador salida"></span>
+              <div>
+                <small>HORA DE SALIDA</small>
+                <strong id="horaSalida">--:--</strong>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="jornada-acciones">
+
+            <button type="button" id="botonEntrada" class="jornada-boton jornada-boton-entrada" disabled>
+              <span class="jornada-boton-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10 17l5-5-5-5"></path>
+                  <path d="M15 12H3"></path>
+                  <path d="M12 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-6"></path>
+                </svg>
+              </span>
+              <span class="jornada-boton-textos">
+                <strong>Registrar entrada</strong>
+                <small>Comenzar mi jornada</small>
+              </span>
+              <span class="jornada-boton-flecha">›</span>
+            </button>
+
+            <button type="button" id="botonSalida" class="jornada-boton jornada-boton-salida" disabled>
+              <span class="jornada-boton-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 17l-5-5 5-5"></path>
+                  <path d="M9 12h12"></path>
+                  <path d="M12 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h6"></path>
+                </svg>
+              </span>
+              <span class="jornada-boton-textos">
+                <strong>Registrar salida</strong>
+                <small>Finalizar mi jornada</small>
+              </span>
+              <span class="jornada-boton-flecha">›</span>
+            </button>
+
+          </div>
+
+          <div id="mensajeAsistencia" class="jornada-mensaje" role="status" aria-live="polite" hidden></div>
+
+          <div class="jornada-nota">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3 2 21h20L12 3Z"></path>
+              <path d="M12 9v5"></path>
+              <path d="M12 17h.01"></path>
+            </svg>
+            <p>
+              Registra tu entrada al comenzar y tu salida al terminar.
+              Si olvidaste algún registro, comunícate con el administrador.
+            </p>
+          </div>
+
+        </div>
+
+      </section>
+
+      <section class="empleado-resumen-seccion">
+
+        <div class="empleado-seccion-encabezado">
+          <div>
+            <span class="seccion-sobretitulo">RESUMEN PERSONAL</span>
+            <h2>Mi actividad</h2>
+          </div>
+        </div>
+
+        <div class="empleado-resumen-grid">
+
+          <article class="resumen-tarjeta resumen-verde">
+            <div class="resumen-tarjeta-superior">
+              <span>DÍAS ASISTIDOS</span>
+              <span class="resumen-icono">✓</span>
+            </div>
+            <strong id="totalAsistencias">—</strong>
+            <small>En el mes actual</small>
+          </article>
+
+          <article class="resumen-tarjeta resumen-amarillo">
+            <div class="resumen-tarjeta-superior">
+              <span>RETARDOS</span>
+              <span class="resumen-icono">◷</span>
+            </div>
+            <strong id="totalRetardos">—</strong>
+            <small>En el mes actual</small>
+          </article>
+
+          <article class="resumen-tarjeta resumen-rojo">
+            <div class="resumen-tarjeta-superior">
+              <span>FALTAS</span>
+              <span class="resumen-icono">!</span>
+            </div>
+            <strong id="totalFaltas">—</strong>
+            <small>En el mes actual</small>
+          </article>
+
+          <article class="resumen-tarjeta resumen-oscuro">
+            <div class="resumen-tarjeta-superior">
+              <span>HORAS TRABAJADAS</span>
+              <span class="resumen-icono">◴</span>
+            </div>
+            <strong id="totalHoras">—</strong>
+            <small>En el mes actual</small>
+          </article>
+
+        </div>
+
+      </section>
+
+      <section class="empleado-historial-seccion">
+
+        <div class="empleado-seccion-encabezado">
+          <div>
+            <span class="seccion-sobretitulo">MIS REGISTROS</span>
+            <h2>Últimas asistencias</h2>
+          </div>
+
+          <button type="button" id="botonVerHistorial" class="historial-ver-todo">
+            Ver historial
+            <span>›</span>
+          </button>
+        </div>
+
+        <div class="historial-tarjeta">
+
+          <div id="listaHistorial" class="historial-lista">
+            <div class="historial-vacio">
+              <div class="historial-vacio-icono">◷</div>
+              <strong>Consultando registros</strong>
+              <p>Tus últimas asistencias aparecerán aquí.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <section class="empleado-mensaje-seccion">
+
+        <div class="empleado-mensaje-tarjeta">
+
+          <div class="mensaje-decoracion" aria-hidden="true">🌮</div>
+
+          <div class="mensaje-contenido">
+            <span>EL SABOR DE NUESTRO EQUIPO</span>
+            <h2>Tu trabajo hace la diferencia.</h2>
+            <p>
+              Gracias por formar parte de Tacos Orientales.
+              Cada jornada es una oportunidad para seguir creciendo juntos.
+            </p>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <nav class="empleado-navegacion" aria-label="Navegación principal">
+
+      <button type="button" id="navInicio" class="navegacion-item activo" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 10 9-7 9 7"></path>
+          <path d="M5 9v12h14V9"></path>
+          <path d="M9 21v-7h6v7"></path>
+        </svg>
+        <span>Inicio</span>
+      </button>
+
+      <button type="button" id="navAsistencia" class="navegacion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v5l3 2"></path>
+        </svg>
+        <span>Asistencia</span>
+      </button>
+
+      <button type="button" id="navHistorial" class="navegacion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v5h5"></path>
+          <path d="M3.5 13a9 9 0 1 0 2-7L3 8"></path>
+          <path d="M12 7v5l4 2"></path>
+        </svg>
+        <span>Historial</span>
+      </button>
+
+      <button type="button" id="navPerfil" class="navegacion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 21a8 8 0 0 1 16 0"></path>
+        </svg>
+        <span>Mi perfil</span>
+      </button>
+
+    </nav>
+
+    <div id="modalConfirmacion" class="empleado-modal" hidden>
+
+      <div class="empleado-modal-fondo" data-cerrar-modal="confirmacion"></div>
+
+      <div class="empleado-modal-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloConfirmacion">
+
+        <div id="confirmacionIcono" class="confirmacion-icono">✓</div>
+
+        <h2 id="tituloConfirmacion">Confirmar asistencia</h2>
+
+        <p id="descripcionConfirmacion">
+          ¿Deseas registrar tu asistencia?
+        </p>
+
+        <div class="confirmacion-datos">
+          <div>
+            <span>FECHA</span>
+            <strong id="confirmacionFecha">—</strong>
+          </div>
+          <div>
+            <span>HORA ACTUAL</span>
+            <strong id="confirmacionHora">—</strong>
+          </div>
+        </div>
+
+        <p class="confirmacion-aclaracion">
+          La hora definitiva será la registrada por el servidor.
+        </p>
+
+        <div class="confirmacion-acciones">
+          <button type="button" id="cancelarConfirmacion" class="boton boton-blanco">
+            Cancelar
+          </button>
+          <button type="button" id="aceptarConfirmacion" class="boton boton-verde" disabled>
+            Confirmar registro
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div id="modalPerfil" class="empleado-modal" hidden>
+
+      <div class="empleado-modal-fondo" data-cerrar-modal="perfil"></div>
+
+      <div class="empleado-modal-contenido modal-perfil-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloPerfil">
+
+        <button type="button" id="cerrarModalPerfil" class="perfil-cerrar" aria-label="Cerrar perfil">×</button>
+
+        <div class="perfil-cabecera">
+          <div id="perfilAvatar" class="perfil-avatar">TO</div>
+          <h2 id="tituloPerfil">Mi perfil</h2>
+          <p id="perfilNombre">Cargando...</p>
+          <span id="perfilRol" class="insignia insignia-verde">Empleado</span>
+        </div>
+
+        <div class="perfil-informacion">
+
+          <div class="perfil-dato">
+            <span>CORREO ELECTRÓNICO</span>
+            <strong id="perfilCorreo">—</strong>
+          </div>
+
+          <div class="perfil-dato">
+            <span>PUESTO ASIGNADO</span>
+            <strong id="perfilPuesto">—</strong>
+          </div>
+
+          <div class="perfil-dato">
+            <span>ESTADO DE CUENTA</span>
+            <strong id="perfilEstado">—</strong>
+          </div>
+
+        </div>
+
+        <button type="button" id="botonCerrarSesion" class="perfil-boton-salir">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 17l5-5-5-5"></path>
+            <path d="M15 12H3"></path>
+            <path d="M12 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-6"></path>
+          </svg>
+          Cerrar sesión
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="modalHistorial" class="empleado-modal" hidden>
+
+      <div class="empleado-modal-fondo" data-cerrar-modal="historial"></div>
+
+      <div class="empleado-modal-contenido modal-historial-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloHistorial">
+
+        <div class="historial-modal-encabezado">
+          <div>
+            <span>REGISTROS PERSONALES</span>
+            <h2 id="tituloHistorial">Mi historial</h2>
+          </div>
+
+          <button type="button" id="cerrarModalHistorial" class="perfil-cerrar" aria-label="Cerrar historial">×</button>
+        </div>
+
+        <div class="historial-modal-filtros">
+
+          <label for="filtroMesHistorial">Consultar mes</label>
+
+          <input type="month" id="filtroMesHistorial">
+
+        </div>
+
+        <div id="historialCompleto" class="historial-completo">
+          <div class="historial-vacio">
+            <div class="historial-vacio-icono">◷</div>
+            <strong>Sin registros cargados</strong>
+            <p>Selecciona un mes para consultar tus asistencias.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div id="toastEmpleado" class="empleado-toast" role="status" aria-live="polite" hidden></div>
+
+    <footer class="empleado-footer">
+      <img src="imagenes/logo.png" alt="">
+      <span>Tacos Orientales · Control de asistencia</span>
+      <small>Río Grande, Oaxaca</small>
+    </footer>
+
+  </div>
+
+  <script type="module" src="js/empleado.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,843 @@
+
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+import {
+  initializeApp,
+  deleteApp
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
+import {
+  getAuth,
+  inMemoryPersistence,
+  setPersistence,
+  createUserWithEmailAndPassword,
+  deleteUser,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+import { app, auth, db } from "../firebase.js";
+
+import {
+  obtenerNombreRol,
+  obtenerMensajeError
+} from "../auth.js";
+
+const $ = id => document.getElementById(id);
+
+const ROLES = Object.freeze([
+  "admin",
+  "mesero",
+  "cocina",
+  "recepcion",
+  "repartidor"
+]);
+
+let empleados = [];
+let horarios = [];
+let sucursales = [];
+let inicializado = false;
+let cargando = false;
+let guardando = false;
+let empleadoEditando = null;
+let mostrarToast = () => {};
+let abrirModal = () => {};
+let cerrarModal = () => {};
+
+function normalizarTexto(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es-MX")
+    .trim();
+}
+
+function nombreValido(nombre) {
+  const partes = String(nombre)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return (
+    String(nombre).trim().length >= 12 &&
+    partes.length >= 3
+  );
+}
+
+function obtenerIniciales(nombre) {
+  const partes = String(nombre || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (partes.length === 0) {
+    return "EM";
+  }
+
+  if (partes.length === 1) {
+    return partes[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${partes[0][0]}${partes[1][0]}`.toUpperCase();
+}
+
+function crearElemento(etiqueta, clase, texto) {
+  const elemento = document.createElement(etiqueta);
+
+  if (clase) {
+    elemento.className = clase;
+  }
+
+  if (texto !== undefined) {
+    elemento.textContent = String(texto);
+  }
+
+  return elemento;
+}
+
+function crearBoton(texto, clase, accion) {
+  const boton = crearElemento(
+    "button",
+    clase,
+    texto
+  );
+
+  boton.type = "button";
+  boton.addEventListener("click", accion);
+
+  return boton;
+}
+
+function establecerCargandoTabla(mensaje) {
+  const cuerpo = $("tablaEmpleados");
+
+  if (!cuerpo) {
+    return;
+  }
+
+  const fila = document.createElement("tr");
+  const celda = crearElemento(
+    "td",
+    "admin-tabla-vacia",
+    mensaje
+  );
+
+  celda.colSpan = 6;
+  fila.append(celda);
+  cuerpo.replaceChildren(fila);
+}
+
+function obtenerNombreHorario(id) {
+  return horarios.find(horario => horario.id === id)?.nombre ||
+    "Sin asignar";
+}
+
+function obtenerNombreSucursal(id) {
+  return sucursales.find(sucursal => sucursal.id === id)?.nombre ||
+    "Sin asignar";
+}
+
+function crearInsigniaEstado(activo) {
+  return crearElemento(
+    "span",
+    `admin-insignia ${activo ? "verde" : "roja"}`,
+    activo ? "Activo" : "Inactivo"
+  );
+}
+
+function crearCeldaEmpleado(empleado) {
+  const celda = document.createElement("td");
+
+  const contenedor = crearElemento(
+    "div",
+    "admin-tabla-usuario"
+  );
+
+  const avatar = crearElemento(
+    "div",
+    "admin-tabla-avatar",
+    obtenerIniciales(empleado.nombreCompleto)
+  );
+
+  const informacion = document.createElement("div");
+
+  const nombre = crearElemento(
+    "strong",
+    "",
+    empleado.nombreCompleto || "Sin nombre"
+  );
+
+  const identificador = crearElemento(
+    "small",
+    "",
+    empleado.uid
+  );
+
+  informacion.append(nombre, identificador);
+  contenedor.append(avatar, informacion);
+  celda.append(contenedor);
+
+  return celda;
+}
+
+function crearFilaEmpleado(empleado) {
+  const fila = document.createElement("tr");
+
+  const celdaContacto = document.createElement("td");
+  const correo = crearElemento(
+    "strong",
+    "",
+    empleado.correo || empleado.email || "Sin correo"
+  );
+
+  const telefono = crearElemento(
+    "small",
+    "",
+    empleado.telefono || "Sin teléfono"
+  );
+
+  correo.style.display = "block";
+  telefono.style.display = "block";
+  telefono.style.marginTop = "5px";
+
+  celdaContacto.append(correo, telefono);
+
+  const celdaRol = crearElemento(
+    "td",
+    "",
+    obtenerNombreRol(empleado.rol)
+  );
+
+  const celdaHorario = crearElemento(
+    "td",
+    "",
+    obtenerNombreHorario(empleado.horarioId)
+  );
+
+  const celdaEstado = document.createElement("td");
+  celdaEstado.append(
+    crearInsigniaEstado(empleado.activo === true)
+  );
+
+  const celdaAcciones = document.createElement("td");
+  const acciones = crearElemento(
+    "div",
+    "admin-tabla-acciones"
+  );
+
+  acciones.append(
+    crearBoton(
+      "Editar",
+      "admin-accion-tabla",
+      () => editarEmpleado(empleado.uid)
+    )
+  );
+
+  if (empleado.uid !== auth.currentUser?.uid) {
+    acciones.append(
+      crearBoton(
+        empleado.activo ? "Desactivar" : "Activar",
+        `admin-accion-tabla ${empleado.activo ? "peligro" : ""}`,
+        () => cambiarEstadoEmpleado(empleado)
+      )
+    );
+  }
+
+  celdaAcciones.append(acciones);
+
+  fila.append(
+    crearCeldaEmpleado(empleado),
+    celdaContacto,
+    celdaRol,
+    celdaHorario,
+    celdaEstado,
+    celdaAcciones
+  );
+
+  return fila;
+}
+
+function filtrarEmpleados() {
+  const busqueda = normalizarTexto(
+    $("buscarEmpleados")?.value
+  );
+
+  const rol = $("filtroRolEmpleados")?.value || "";
+  const estado = $("filtroEstadoEmpleados")?.value || "";
+
+  return empleados.filter(empleado => {
+    const contenido = normalizarTexto([
+      empleado.nombreCompleto,
+      empleado.correo || empleado.email,
+      empleado.telefono
+    ].join(" "));
+
+    const coincideBusqueda =
+      !busqueda || contenido.includes(busqueda);
+
+    const coincideRol =
+      !rol || empleado.rol === rol;
+
+    const coincideEstado =
+      !estado ||
+      (estado === "activo" && empleado.activo === true) ||
+      (estado === "inactivo" && empleado.activo !== true);
+
+    return coincideBusqueda &&
+      coincideRol &&
+      coincideEstado;
+  });
+}
+
+function renderizarEmpleados() {
+  const cuerpo = $("tablaEmpleados");
+
+  if (!cuerpo) {
+    return;
+  }
+
+  const resultados = filtrarEmpleados();
+
+  if (!resultados.length) {
+    establecerCargandoTabla(
+      empleados.length
+        ? "No se encontraron empleados con esos filtros."
+        : "Todavía no hay empleados registrados."
+    );
+    return;
+  }
+
+  const fragmento = document.createDocumentFragment();
+
+  resultados.forEach(empleado => {
+    fragmento.append(crearFilaEmpleado(empleado));
+  });
+
+  cuerpo.replaceChildren(fragmento);
+}
+
+function actualizarMetricaEmpleados() {
+  const metrica = $("metricaEmpleados");
+
+  if (metrica) {
+    metrica.textContent = empleados.filter(
+      empleado => empleado.activo === true
+    ).length;
+  }
+}
+
+async function cargarEmpleados() {
+  if (cargando) {
+    return;
+  }
+
+  cargando = true;
+  establecerCargandoTabla("Consultando empleados...");
+
+  try {
+    const referencia = collection(db, "empleados");
+    const resultado = await getDocs(referencia);
+
+    empleados = resultado.docs.map(documento => ({
+      ...documento.data(),
+      uid: documento.id
+    }));
+
+    empleados.sort((a, b) => {
+      return String(a.nombreCompleto || "").localeCompare(
+        String(b.nombreCompleto || ""),
+        "es-MX"
+      );
+    });
+
+    renderizarEmpleados();
+    actualizarMetricaEmpleados();
+  } catch (error) {
+    console.error("Error al cargar empleados:", error);
+
+    establecerCargandoTabla(
+      "No fue posible consultar los empleados."
+    );
+
+    mostrarToast(
+      obtenerMensajeError(error) ||
+      "No se pudieron consultar los empleados.",
+      "error"
+    );
+  } finally {
+    cargando = false;
+  }
+}
+
+async function cargarHorariosDisponibles() {
+  const resultado = await getDocs(
+    collection(db, "horarios")
+  );
+
+  horarios = resultado.docs.map(documento => ({
+    ...documento.data(),
+    id: documento.id
+  }));
+
+  horarios.sort((a, b) => {
+    return String(a.nombre || "").localeCompare(
+      String(b.nombre || ""),
+      "es-MX"
+    );
+  });
+
+  const selector = $("empleadoHorario");
+
+  if (!selector) {
+    return;
+  }
+
+  selector.replaceChildren(
+    new Option("Seleccionar horario", "")
+  );
+
+  horarios.forEach(horario => {
+    selector.add(
+      new Option(
+        horario.nombre || horario.id,
+        horario.id
+      )
+    );
+  });
+}
+
+async function cargarSucursalesDisponibles() {
+  const resultado = await getDocs(
+    collection(db, "sucursales")
+  );
+
+  sucursales = resultado.docs.map(documento => ({
+    ...documento.data(),
+    id: documento.id
+  }));
+
+  sucursales.sort((a, b) => {
+    return String(a.nombre || "").localeCompare(
+      String(b.nombre || ""),
+      "es-MX"
+    );
+  });
+
+  const selector = $("empleadoSucursal");
+
+  if (!selector) {
+    return;
+  }
+
+  selector.replaceChildren(
+    new Option("Seleccionar sucursal", "")
+  );
+
+  sucursales.forEach(sucursal => {
+    selector.add(
+      new Option(
+        sucursal.nombre || sucursal.id,
+        sucursal.id
+      )
+    );
+  });
+}
+
+async function cargarCatalogos() {
+  try {
+    await Promise.all([
+      cargarHorariosDisponibles(),
+      cargarSucursalesDisponibles()
+    ]);
+  } catch (error) {
+    console.error("Error al cargar catálogos:", error);
+
+    mostrarToast(
+      "No se pudieron cargar todos los horarios o sucursales.",
+      "error"
+    );
+  }
+}
+
+function limpiarFormularioEmpleado() {
+  $("formEmpleado")?.reset();
+  empleadoEditando = null;
+
+  if ($("empleadoUid")) $("empleadoUid").value = "";
+  if ($("empleadoEstado")) $("empleadoEstado").value = "activo";
+  if ($("empleadoContrasena")) $("empleadoContrasena").value = "";
+  if ($("campoContrasenaTemporal")) $("campoContrasenaTemporal").style.display = "";
+  if ($("empleadoCorreo")) $("empleadoCorreo").readOnly = false;
+  if ($("tituloModalEmpleado")) $("tituloModalEmpleado").textContent = "Nuevo empleado";
+  if ($("guardarEmpleado")) $("guardarEmpleado").textContent = "Crear empleado";
+}
+
+async function nuevoEmpleado() {
+  limpiarFormularioEmpleado();
+
+  await cargarCatalogos();
+
+  abrirModal("modalEmpleado");
+}
+
+async function editarEmpleado(uid) {
+  const empleado = empleados.find(registro => registro.uid === uid);
+
+  if (!empleado) {
+    mostrarToast("No se encontró el empleado seleccionado.", "error");
+    return;
+  }
+
+  empleadoEditando = empleado;
+  await cargarCatalogos();
+
+  $("empleadoUid").value = empleado.uid;
+  $("empleadoNombre").value = empleado.nombreCompleto || "";
+  $("empleadoCorreo").value = empleado.correo || empleado.email || "";
+  $("empleadoCorreo").readOnly = true;
+  $("empleadoTelefono").value = empleado.telefono || "";
+  $("empleadoRol").value = empleado.rol || "";
+  $("empleadoHorario").value = empleado.horarioId || "";
+  $("empleadoSucursal").value = empleado.sucursalId || "";
+  $("empleadoEstado").value = empleado.activo ? "activo" : "inactivo";
+
+  if ($("campoContrasenaTemporal")) {
+    $("campoContrasenaTemporal").style.display = "none";
+  }
+
+  if ($("empleadoContrasena")) $("empleadoContrasena").value = "";
+
+  $("tituloModalEmpleado").textContent = "Editar empleado";
+  $("guardarEmpleado").textContent = "Guardar cambios";
+
+  abrirModal("modalEmpleado");
+}
+
+function obtenerDatosFormulario() {
+  const nombreCompleto = $("empleadoNombre").value
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleUpperCase("es-MX");
+
+  const correo = $("empleadoCorreo").value
+    .trim()
+    .toLowerCase();
+
+  const telefono = $("empleadoTelefono").value
+    .replace(/[^\d+]/g, "")
+    .trim();
+
+  const rol = $("empleadoRol").value;
+  const horarioId = $("empleadoHorario").value;
+  const sucursalId = $("empleadoSucursal").value;
+  const activo = $("empleadoEstado").value === "activo";
+
+  if (!nombreValido(nombreCompleto)) {
+    throw new Error(
+      "El nombre debe contener al menos 12 caracteres y tres palabras."
+    );
+  }
+
+  if (!ROLES.includes(rol)) {
+    throw new Error("Selecciona un puesto válido.");
+  }
+
+  if (!correo && !telefono) {
+    throw new Error(
+      "Debes proporcionar un correo electrónico o un teléfono."
+    );
+  }
+
+  if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    throw new Error("El correo electrónico no es válido.");
+  }
+
+  if (telefono && !/^\+?\d{10,15}$/.test(telefono)) {
+    throw new Error(
+      "El teléfono debe contener entre 10 y 15 dígitos."
+    );
+  }
+
+  if (!horarioId || !horarios.some(h => h.id === horarioId)) {
+    throw new Error("Selecciona un horario válido.");
+  }
+
+  if (!sucursalId || !sucursales.some(s => s.id === sucursalId)) {
+    throw new Error("Selecciona una sucursal válida.");
+  }
+
+  return {
+    nombreCompleto,
+    correo,
+    telefono,
+    rol,
+    horarioId,
+    sucursalId,
+    activo
+  };
+}
+
+function establecerGuardando(estado) {
+  guardando = estado;
+
+  const boton = $("guardarEmpleado");
+
+  if (boton) {
+    boton.disabled = estado;
+    boton.textContent = estado
+      ? "Guardando..."
+      : empleadoEditando
+        ? "Guardar cambios"
+        : "Crear empleado";
+  }
+}
+
+async function crearCuentaEmpleado(datos, contrasena) {
+  const administrador = auth.currentUser;
+
+  if (!administrador) {
+    throw new Error("La sesión del administrador ha caducado.");
+  }
+
+  const nombreApp = `alta-empleado-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const secundaria = initializeApp(app.options, nombreApp);
+  const authSecundaria = getAuth(secundaria);
+
+  let usuarioCreado = null;
+  let perfilGuardado = false;
+
+  try {
+    await setPersistence(authSecundaria, inMemoryPersistence);
+
+    const credencial = await createUserWithEmailAndPassword(
+      authSecundaria,
+      datos.correo,
+      contrasena
+    );
+
+    usuarioCreado = credencial.user;
+
+    await setDoc(doc(db, "empleados", usuarioCreado.uid), {
+      ...datos,
+      email: datos.correo,
+      creadoEn: serverTimestamp(),
+      creadoPor: administrador.uid,
+      actualizadoEn: serverTimestamp(),
+      actualizadoPor: administrador.uid
+    });
+
+    perfilGuardado = true;
+    return usuarioCreado.uid;
+  } catch (error) {
+    if (usuarioCreado && !perfilGuardado) {
+      try {
+        await deleteUser(usuarioCreado);
+      } catch (limpiezaError) {
+        console.error("Error al revertir cuenta:", limpiezaError);
+        throw new Error(
+          "La cuenta se creó en Authentication, pero no se pudo guardar su perfil ni revertir el alta. Revísala en Firebase antes de reintentar."
+        );
+      }
+    }
+
+    throw error;
+  } finally {
+    try {
+      if (authSecundaria.currentUser) {
+        await signOut(authSecundaria);
+      }
+    } finally {
+      await deleteApp(secundaria);
+    }
+  }
+}
+
+async function guardarEmpleado(evento) {
+  evento.preventDefault();
+
+  if (guardando) return;
+
+  try {
+    const datos = obtenerDatosFormulario();
+    const editando = empleadoEditando;
+    const administrador = auth.currentUser;
+
+    if (!administrador) {
+      throw new Error("Debes iniciar sesión nuevamente.");
+    }
+
+    if (editando && editando.uid === administrador.uid) {
+      if (datos.rol !== editando.rol || datos.activo !== editando.activo) {
+        throw new Error("No puedes cambiar tu propio rol o estado.");
+      }
+    }
+
+    if (editando && datos.correo !== (editando.correo || editando.email || "")) {
+      throw new Error("El correo de acceso no puede modificarse desde este formulario.");
+    }
+
+    let contrasena = "";
+
+    if (!editando) {
+      if (!datos.correo) {
+        throw new Error("El correo electrónico es obligatorio.");
+      }
+
+      contrasena = $("empleadoContrasena")?.value || "";
+
+      if (contrasena.length < 8 || contrasena.length > 128) {
+        throw new Error("La contraseña debe contener entre 8 y 128 caracteres.");
+      }
+    }
+
+    establecerGuardando(true);
+
+    if (editando) {
+      const cambios = {
+        ...datos,
+        actualizadoEn: serverTimestamp(),
+        actualizadoPor: administrador.uid
+      };
+
+      if (Object.prototype.hasOwnProperty.call(editando, "email")) {
+        cambios.email = datos.correo;
+      }
+
+      await updateDoc(doc(db, "empleados", editando.uid), cambios);
+      mostrarToast("Los datos del empleado se actualizaron correctamente.");
+    } else {
+      await crearCuentaEmpleado(datos, contrasena);
+      mostrarToast("Empleado registrado correctamente. Entrega su contraseña de forma privada.");
+    }
+
+    cerrarModal("modalEmpleado");
+    limpiarFormularioEmpleado();
+    await cargarEmpleados();
+  } catch (error) {
+    console.error("Error al guardar empleado:", error);
+
+    mostrarToast(
+      obtenerMensajeError(error) || error.message || "No fue posible guardar al empleado.",
+      "error"
+    );
+  } finally {
+    establecerGuardando(false);
+  }
+}
+
+async function cambiarEstadoEmpleado(empleado) {
+  if (guardando) return;
+
+  const administrador = auth.currentUser;
+
+  if (!administrador || empleado.uid === administrador.uid) {
+    mostrarToast("No puedes cambiar el estado de tu propia cuenta.", "error");
+    return;
+  }
+
+  const nuevoEstado = empleado.activo !== true;
+  const accion = nuevoEstado ? "activar" : "desactivar";
+
+  if (!window.confirm(
+    `¿Deseas ${accion} la cuenta de ${empleado.nombreCompleto}?`
+  )) return;
+
+  try {
+    guardando = true;
+
+    await updateDoc(doc(db, "empleados", empleado.uid), {
+      activo: nuevoEstado,
+      actualizadoEn: serverTimestamp(),
+      actualizadoPor: administrador.uid
+    });
+
+    mostrarToast(
+      nuevoEstado
+        ? "El empleado fue activado correctamente."
+        : "El empleado fue desactivado correctamente."
+    );
+
+    await cargarEmpleados();
+  } catch (error) {
+    console.error("Error al cambiar estado:", error);
+
+    mostrarToast(
+      obtenerMensajeError(error) || error.message || "No fue posible cambiar el estado.",
+      "error"
+    );
+  } finally {
+    guardando = false;
+  }
+}
+
+function configurarEventos() {
+  $("buscarEmpleados")?.addEventListener(
+    "input",
+    renderizarEmpleados
+  );
+
+  $("filtroRolEmpleados")?.addEventListener(
+    "change",
+    renderizarEmpleados
+  );
+
+  $("filtroEstadoEmpleados")?.addEventListener(
+    "change",
+    renderizarEmpleados
+  );
+
+  $("formEmpleado")?.addEventListener(
+    "submit",
+    guardarEmpleado
+  );
+
+  document.addEventListener("admin:seccion", evento => {
+    if (evento.detail?.seccion === "empleados") {
+      cargarEmpleados();
+    }
+  });
+}
+
+async function inicializarEmpleados(dependencias = {}) {
+  if (inicializado) {
+    return;
+  }
+
+  mostrarToast = dependencias.mostrarToast || mostrarToast;
+  abrirModal = dependencias.abrirModal || abrirModal;
+  cerrarModal = dependencias.cerrarModal || cerrarModal;
+
+  inicializado = true;
+
+  configurarEventos();
+
+  const botonNuevo = $("botonNuevoEmpleado");
+
+  if (botonNuevo) {
+    botonNuevo.disabled = false;
+    botonNuevo.addEventListener("click", nuevoEmpleado);
+  }
+
+  const botonGuardar = $("guardarEmpleado");
+
+  if (botonGuardar) {
+    botonGuardar.disabled = false;
+  }
+
+  await cargarEmpleados();
+}
+
+export {
+  inicializarEmpleados,
+  cargarEmpleados,
+  cargarCatalogos,
+  renderizarEmpleados,
+  nuevoEmpleado,
+  editarEmpleado
+};

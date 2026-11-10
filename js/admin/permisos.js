@@ -1,0 +1,619 @@
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+import { auth, db } from "../firebase.js";
+const $ = id => document.getElementById(id);
+
+const TIPOS = Object.freeze({
+  permiso: {
+    nombre: "Permiso autorizado",
+    clase: "azul"
+  },
+  falta_justificada: {
+    nombre: "Falta justificada",
+    clase: "verde"
+  },
+  falta_injustificada: {
+    nombre: "Falta injustificada",
+    clase: "roja"
+  },
+  retardo_justificado: {
+    nombre: "Retardo justificado",
+    clase: "amarilla"
+  },
+  correccion: {
+    nombre: "Corrección de asistencia",
+    clase: "gris"
+  }
+});
+
+const ESTADOS = Object.freeze({
+  pendiente: {
+    nombre: "Pendiente",
+    clase: "amarilla"
+  },
+  aprobada: {
+    nombre: "Aprobada",
+    clase: "verde"
+  },
+  rechazada: {
+    nombre: "Rechazada",
+    clase: "roja"
+  },
+  aplicada: {
+    nombre: "Aplicada",
+    clase: "azul"
+  }
+});
+
+let incidencias = [];
+let empleados = [];
+let inicializado = false;
+let cargando = false;
+let guardando = false;
+
+let mostrarToast = () => {};
+let abrirModal = () => {};
+let cerrarModal = () => {};
+
+function crearElemento(etiqueta, clase = "", texto) {
+  const nodo = document.createElement(etiqueta);
+
+  if (clase) {
+    nodo.className = clase;
+  }
+
+  if (texto !== undefined) {
+    nodo.textContent = String(texto);
+  }
+
+  return nodo;
+}
+
+function normalizarTexto(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es-MX")
+    .trim();
+}
+
+function obtenerFechaActual() {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const datos = Object.fromEntries(
+    partes.map(parte => [parte.type, parte.value])
+  );
+
+  return `${datos.year}-${datos.month}-${datos.day}`;
+}
+
+function fechaValida(valor) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(valor))) {
+    return false;
+  }
+
+  const [anio, mes, dia] = valor.split("-").map(Number);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+
+  return fecha.getUTCFullYear() === anio &&
+    fecha.getUTCMonth() === mes - 1 &&
+    fecha.getUTCDate() === dia;
+}
+
+function obtenerNombreEmpleado(uid) {
+  return empleados.find(
+    empleado => empleado.uid === uid
+  )?.nombreCompleto || "Empleado no identificado";
+}
+
+function obtenerTipo(tipo) {
+  return TIPOS[tipo] || {
+    nombre: "Otro",
+    clase: "gris"
+  };
+}
+
+function obtenerEstado(estado) {
+  return ESTADOS[estado] || {
+    nombre: "Registrada",
+    clase: "gris"
+  };
+}
+
+function mostrarEstadoTabla(mensaje) {
+  const cuerpo = $("tablaPermisos");
+
+  if (!cuerpo) {
+    return;
+  }
+
+  const fila = crearElemento("tr");
+  const celda = crearElemento(
+    "td",
+    "admin-tabla-vacia",
+    mensaje
+  );
+
+  celda.colSpan = 6;
+  fila.append(celda);
+  cuerpo.replaceChildren(fila);
+}
+
+function crearInsignia(texto, clase) {
+  return crearElemento(
+    "span",
+    `admin-insignia ${clase}`,
+    texto
+  );
+}
+
+function crearFilaIncidencia(incidencia) {
+  const fila = crearElemento("tr");
+
+  const empleado = crearElemento(
+    "td",
+    "",
+    incidencia.nombreEmpleado ||
+    obtenerNombreEmpleado(incidencia.empleadoId)
+  );
+
+  const tipo = obtenerTipo(incidencia.tipo);
+  const celdaTipo = crearElemento("td");
+
+  celdaTipo.append(
+    crearInsignia(tipo.nombre, tipo.clase)
+  );
+
+  const fecha = crearElemento(
+    "td",
+    "",
+    incidencia.fechaJornada ||
+    incidencia.fecha ||
+    "—"
+  );
+
+  const motivo = crearElemento(
+    "td",
+    "",
+    incidencia.motivo || "Sin motivo"
+  );
+
+  motivo.style.whiteSpace = "normal";
+  motivo.style.minWidth = "200px";
+  motivo.style.maxWidth = "350px";
+
+  const estado = obtenerEstado(incidencia.estado);
+  const celdaEstado = crearElemento("td");
+
+  celdaEstado.append(
+    crearInsignia(estado.nombre, estado.clase)
+  );
+
+  const celdaAcciones = crearElemento("td");
+
+  const boton = crearElemento(
+    "button",
+    "admin-accion-tabla",
+    "Detalles"
+  );
+
+  boton.type = "button";
+
+  boton.addEventListener("click", () => {
+    mostrarDetalleIncidencia(incidencia);
+  });
+
+  celdaAcciones.append(boton);
+
+  fila.append(
+    empleado,
+    celdaTipo,
+    fecha,
+    motivo,
+    celdaEstado,
+    celdaAcciones
+  );
+
+  return fila;
+}
+
+function obtenerFiltros() {
+  return {
+    empleado: $("filtroEmpleadoPermisos")?.value || "",
+    tipo: $("filtroTipoPermisos")?.value || "",
+    estado: $("filtroEstadoPermisos")?.value || ""
+  };
+}
+
+function filtrarIncidencias() {
+  const filtros = obtenerFiltros();
+
+  return incidencias.filter(incidencia => {
+    const coincideEmpleado =
+      !filtros.empleado ||
+      incidencia.empleadoId === filtros.empleado;
+
+    const coincideTipo =
+      !filtros.tipo ||
+      incidencia.tipo === filtros.tipo;
+
+    const coincideEstado =
+      !filtros.estado ||
+      incidencia.estado === filtros.estado;
+
+    return coincideEmpleado &&
+      coincideTipo &&
+      coincideEstado;
+  });
+}
+
+function renderizarIncidencias() {
+  const cuerpo = $("tablaPermisos");
+
+  if (!cuerpo) {
+    return;
+  }
+
+  const resultados = filtrarIncidencias();
+
+  if (!resultados.length) {
+    mostrarEstadoTabla(
+      incidencias.length
+        ? "No hay incidencias que coincidan con los filtros."
+        : "Todavía no se han registrado incidencias."
+    );
+    return;
+  }
+
+  const fragmento = document.createDocumentFragment();
+
+  resultados.forEach(incidencia => {
+    fragmento.append(
+      crearFilaIncidencia(incidencia)
+    );
+  });
+
+  cuerpo.replaceChildren(fragmento);
+}
+
+async function cargarEmpleados() {
+  const resultado = await getDocs(
+    collection(db, "empleados")
+  );
+
+  empleados = resultado.docs.map(documento => ({
+    ...documento.data(),
+    uid: documento.id
+  }));
+
+  empleados.sort((a, b) => {
+    return String(a.nombreCompleto || "").localeCompare(
+      String(b.nombreCompleto || ""),
+      "es-MX"
+    );
+  });
+
+  const selectores = [
+    "filtroEmpleadoPermisos",
+    "incidenciaEmpleado"
+  ];
+
+  selectores.forEach(id => {
+    const selector = $(id);
+
+    if (!selector) {
+      return;
+    }
+
+    const anterior = selector.value;
+
+    selector.replaceChildren(
+      new Option(
+        id === "incidenciaEmpleado"
+          ? "Seleccionar empleado"
+          : "Todos los empleados",
+        ""
+      )
+    );
+
+    empleados.forEach(empleado => {
+      selector.add(
+        new Option(
+          empleado.nombreCompleto || empleado.uid,
+          empleado.uid
+        )
+      );
+    });
+
+    if ([...selector.options].some(
+      opcion => opcion.value === anterior
+    )) {
+      selector.value = anterior;
+    }
+  });
+}
+
+async function cargarIncidencias() {
+  if (cargando) {
+    return;
+  }
+
+  cargando = true;
+
+  mostrarEstadoTabla("Consultando incidencias...");
+
+  try {
+    const resultado = await getDocs(
+      query(
+        collection(db, "incidencias"),
+        orderBy("creadoEn", "desc"),
+        limit(500)
+      )
+    );
+
+    incidencias = resultado.docs.map(documento => ({
+      ...documento.data(),
+      id: documento.id
+    }));
+
+    renderizarIncidencias();
+  } catch (error) {
+    console.error("Error al consultar incidencias:", error);
+
+    mostrarEstadoTabla(
+      "No fue posible consultar las incidencias."
+    );
+
+    mostrarToast(
+      "No se pudieron cargar las incidencias.",
+      "error"
+    );
+  } finally {
+    cargando = false;
+  }
+}
+
+function limpiarFormulario() {
+  $("formIncidencia")?.reset();
+
+  if ($("incidenciaFecha")) {
+    $("incidenciaFecha").value = obtenerFechaActual();
+  }
+
+  if ($("incidenciaTipo")) {
+    $("incidenciaTipo").value = "permiso";
+  }
+}
+
+async function nuevaIncidencia() {
+  try {
+    await cargarEmpleados();
+    limpiarFormulario();
+    abrirModal("modalIncidencia");
+  } catch (error) {
+    console.error("Error al preparar incidencia:", error);
+
+    mostrarToast(
+      "No fue posible cargar los empleados.",
+      "error"
+    );
+  }
+}
+
+function obtenerDatosFormulario() {
+  const empleadoId = $("incidenciaEmpleado").value;
+  const tipo = $("incidenciaTipo").value;
+  const fechaJornada = $("incidenciaFecha").value;
+
+  const motivo = $("incidenciaMotivo").value
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (!empleados.some(
+    empleado => empleado.uid === empleadoId
+  )) {
+    throw new Error(
+      "Selecciona un empleado válido."
+    );
+  }
+
+  if (!Object.hasOwn(TIPOS, tipo)) {
+    throw new Error(
+      "Selecciona un tipo de incidencia válido."
+    );
+  }
+
+  if (!fechaValida(fechaJornada)) {
+    throw new Error(
+      "Selecciona una fecha válida."
+    );
+  }
+
+  if (motivo.length < 10 || motivo.length > 1000) {
+    throw new Error(
+      "El motivo debe contener entre 10 y 1000 caracteres."
+    );
+  }
+
+  return {
+    empleadoId,
+    tipo,
+    fechaJornada,
+    motivo
+  };
+}
+
+function establecerGuardando(estado) {
+  guardando = estado;
+
+  const boton = $("guardarIncidencia");
+
+  if (!boton) {
+    return;
+  }
+
+  boton.disabled = estado;
+  boton.textContent = estado
+    ? "Registrando..."
+    : "Registrar incidencia";
+}
+
+async function guardarIncidencia(evento) {
+  evento.preventDefault();
+
+  if (guardando) {
+    return;
+  }
+
+  try {
+    const datos = obtenerDatosFormulario();
+
+    establecerGuardando(true);
+
+    const administrador = auth.currentUser;
+
+    if (!administrador) {
+      throw new Error("La sesión ha caducado. Inicia sesión nuevamente.");
+    }
+
+    const empleadoSeleccionado = empleados.find(
+      empleado => empleado.uid === datos.empleadoId
+    );
+
+    await addDoc(collection(db, "incidencias"), {
+      ...datos,
+      nombreEmpleado: empleadoSeleccionado?.nombreCompleto || "",
+      estado: "pendiente",
+      creadoEn: serverTimestamp(),
+      creadoPor: administrador.uid,
+      actualizadoEn: serverTimestamp(),
+      actualizadoPor: administrador.uid
+    });
+
+    cerrarModal("modalIncidencia");
+
+    mostrarToast(
+      "La incidencia fue registrada correctamente."
+    );
+
+    limpiarFormulario();
+    await cargarIncidencias();
+  } catch (error) {
+    console.error("Error al registrar incidencia:", error);
+
+    mostrarToast(
+      error.message ||
+      "No fue posible registrar la incidencia.",
+      "error"
+    );
+  } finally {
+    establecerGuardando(false);
+  }
+}
+
+function mostrarDetalleIncidencia(incidencia) {
+  const tipo = obtenerTipo(incidencia.tipo);
+  const estado = obtenerEstado(incidencia.estado);
+
+  const detalles = [
+    `Empleado: ${incidencia.nombreEmpleado || obtenerNombreEmpleado(incidencia.empleadoId)}`,
+    `Tipo: ${tipo.nombre}`,
+    `Fecha: ${incidencia.fechaJornada || "—"}`,
+    `Estado: ${estado.nombre}`,
+    `Motivo: ${incidencia.motivo || "—"}`,
+    `Administrador: ${incidencia.nombreAdministrador || "No disponible"}`,
+    `Identificador: ${incidencia.id}`
+  ];
+
+  window.alert(detalles.join("\n"));
+}
+
+function configurarFiltros() {
+  [
+    "filtroEmpleadoPermisos",
+    "filtroTipoPermisos",
+    "filtroEstadoPermisos"
+  ].forEach(id => {
+    $(id)?.addEventListener(
+      "change",
+      renderizarIncidencias
+    );
+  });
+}
+
+function configurarEventos() {
+  $("formIncidencia")?.addEventListener(
+    "submit",
+    guardarIncidencia
+  );
+
+  document.addEventListener("admin:seccion", evento => {
+    if (evento.detail?.seccion === "permisos") {
+      cargarIncidencias();
+    }
+  });
+}
+
+async function inicializarPermisos(dependencias = {}) {
+  if (inicializado) {
+    return;
+  }
+
+  mostrarToast =
+    dependencias.mostrarToast || mostrarToast;
+
+  abrirModal =
+    dependencias.abrirModal || abrirModal;
+
+  cerrarModal =
+    dependencias.cerrarModal || cerrarModal;
+
+  inicializado = true;
+
+  configurarFiltros();
+  configurarEventos();
+
+  const botonNuevo = $("botonNuevoPermiso");
+
+  if (botonNuevo) {
+    botonNuevo.disabled = false;
+    botonNuevo.addEventListener(
+      "click",
+      nuevaIncidencia
+    );
+  }
+
+  const botonGuardar = $("guardarIncidencia");
+
+  if (botonGuardar) {
+    botonGuardar.disabled = false;
+  }
+
+  try {
+    await cargarEmpleados();
+  } catch (error) {
+    console.error("Error al cargar empleados:", error);
+  }
+
+  await cargarIncidencias();
+}
+
+export {
+  inicializarPermisos,
+  cargarIncidencias,
+  renderizarIncidencias,
+  nuevaIncidencia
+};

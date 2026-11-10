@@ -1,0 +1,1106 @@
+
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121713">
+  <meta name="description" content="Panel administrativo de control de asistencias de Tacos Orientales.">
+  <title>Administración | Tacos Orientales</title>
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+  <div id="pantallaCargaAdmin" class="admin-pantalla-carga">
+    <div class="admin-carga-contenido">
+      <div class="admin-carga-logo">TO</div>
+      <div class="admin-carga-indicador"></div>
+      <p>Preparando panel administrativo...</p>
+    </div>
+  </div>
+
+  <div class="admin-layout">
+
+    <aside class="admin-sidebar" id="adminSidebar">
+
+      <div class="admin-sidebar-encabezado">
+        <a href="#dashboard" class="admin-marca" aria-label="Ir al panel general">
+          <span class="admin-marca-icono">TO</span>
+          <span class="admin-marca-texto">
+            <strong>TACOS ORIENTALES</strong>
+            <small>Control de personal</small>
+          </span>
+        </a>
+
+        <button type="button" id="botonCerrarMenuAdmin" class="admin-cerrar-menu" aria-label="Cerrar menú">
+          ×
+        </button>
+      </div>
+
+      <div class="admin-sidebar-perfil">
+        <div class="admin-perfil-avatar" id="avatarAdministrador">AD</div>
+        <div class="admin-perfil-informacion">
+          <strong id="nombreAdministrador">Administrador</strong>
+          <small>Administrador general</small>
+        </div>
+      </div>
+
+      <nav class="admin-navegacion" aria-label="Menú administrativo">
+        <div class="admin-menu-grupo">
+          <span class="admin-menu-etiqueta">GENERAL</span>
+
+          <button type="button" class="admin-menu-enlace activo" data-seccion="dashboard">
+            <span class="admin-menu-icono">▦</span>
+            <span>Panel general</span>
+          </button>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="asistencias">
+            <span class="admin-menu-icono">◷</span>
+            <span>Asistencias</span>
+          </button>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="empleados">
+            <span class="admin-menu-icono">♙</span>
+            <span>Empleados</span>
+          </button>
+        </div>
+
+        <div class="admin-menu-grupo">
+          <span class="admin-menu-etiqueta">ORGANIZACIÓN</span>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="horarios">
+            <span class="admin-menu-icono">▤</span>
+            <span>Horarios</span>
+          </button>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="permisos">
+            <span class="admin-menu-icono">✎</span>
+            <span>Permisos e incidencias</span>
+          </button>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="sucursales">
+            <span class="admin-menu-icono">⌖</span>
+            <span>Sucursales</span>
+          </button>
+        </div>
+
+        <div class="admin-menu-grupo">
+          <span class="admin-menu-etiqueta">CONTROL</span>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="reportes">
+            <span class="admin-menu-icono">▥</span>
+            <span>Reportes</span>
+          </button>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="auditoria">
+            <span class="admin-menu-icono">◉</span>
+            <span>Auditoría</span>
+          </button>
+
+          <button type="button" class="admin-menu-enlace" data-seccion="configuracion">
+            <span class="admin-menu-icono">⚙</span>
+            <span>Configuración</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="admin-sidebar-pie">
+        <button type="button" class="admin-cerrar-sesion" id="botonCerrarSesion">
+          <span>⇥</span>
+          <span>Cerrar sesión</span>
+        </button>
+        <small>Tacos Orientales · Asistencias</small>
+      </div>
+
+    </aside>
+
+    <div class="admin-contenido">
+
+      <header class="admin-header">
+        <div class="admin-header-izquierda">
+          <button type="button" id="botonMenuAdmin" class="admin-boton-menu" aria-label="Abrir menú" aria-expanded="false">
+            ☰
+          </button>
+
+          <div class="admin-header-titulos">
+            <span class="admin-header-superior">ADMINISTRACIÓN</span>
+            <h1 id="tituloSeccion">Panel general</h1>
+          </div>
+        </div>
+
+        <div class="admin-header-derecha">
+          <span class="admin-header-negocio">Tacos Orientales</span>
+          <span class="admin-header-avatar" id="adminAvatar">AD</span>
+        </div>
+      </header>
+
+      <main class="admin-main">
+
+        <section id="seccion-dashboard" class="admin-seccion activo">
+
+          <div class="admin-bienvenida">
+            <div>
+              <span class="admin-sobretitulo">RESUMEN OPERATIVO</span>
+              <h2>Control de tu equipo</h2>
+              <p>Consulta los movimientos del personal y administra las jornadas de trabajo.</p>
+            </div>
+            <button type="button" class="admin-boton admin-boton-secundario" data-ir-seccion="asistencias">
+              Ver asistencias
+            </button>
+          </div>
+
+          <div class="admin-metricas">
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Empleados registrados</span>
+              <strong id="metricaEmpleados">—</strong>
+              <small>Personal del sistema</small>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Presentes hoy</span>
+              <strong id="metricaAsistencias">—</strong>
+              <small>Entradas registradas</small>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Retardos de hoy</span>
+              <strong id="metricaRetardos">—</strong>
+              <small>Según clasificación registrada</small>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Jornadas completadas</span>
+              <strong id="metricaJornadas">—</strong>
+              <small>Con entrada y salida</small>
+            </article>
+          </div>
+
+          <div class="admin-dashboard-grid">
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Actividad de hoy</h3>
+                  <p>Movimientos recientes del personal</p>
+                </div>
+                <button type="button" class="admin-boton-texto" data-ir-seccion="asistencias">
+                  Ver todos
+                </button>
+              </div>
+              <div id="dashboardActividad" class="admin-actividad-lista">
+                <div class="admin-estado-vacio">
+                  <strong>Consultando movimientos...</strong>
+                  <p>La actividad aparecerá aquí.</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Accesos rápidos</h3>
+                  <p>Herramientas de administración</p>
+                </div>
+              </div>
+
+              <div class="admin-accesos">
+                <button type="button" data-ir-seccion="empleados" class="admin-acceso">
+                  <strong>Empleados</strong>
+                  <span>Gestionar cuentas y puestos</span>
+                </button>
+
+                <button type="button" data-ir-seccion="horarios" class="admin-acceso">
+                  <strong>Horarios</strong>
+                  <span>Organizar los turnos</span>
+                </button>
+
+                <button type="button" data-ir-seccion="permisos" class="admin-acceso">
+                  <strong>Incidencias</strong>
+                  <span>Registrar permisos y faltas</span>
+                </button>
+
+                <button type="button" data-ir-seccion="reportes" class="admin-acceso">
+                  <strong>Reportes</strong>
+                  <span>Consultar resultados por período</span>
+                </button>
+              </div>
+            </article>
+          </div>
+
+        </section>
+
+        <section id="seccion-asistencias" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">CONTROL DIARIO</span>
+              <h2>Registro de asistencias</h2>
+              <p>Consulta las entradas, salidas y estados de las jornadas.</p>
+            </div>
+
+            <button type="button" id="botonActualizarAsistencias" class="admin-boton admin-boton-secundario">
+              Actualizar registros
+            </button>
+          </div>
+
+          <div class="admin-panel">
+            <div class="admin-filtros">
+              <label class="admin-campo">
+                <span>Fecha</span>
+                <input type="date" id="filtroFechaAsistencias">
+              </label>
+
+              <label class="admin-campo">
+                <span>Empleado</span>
+                <select id="filtroEmpleadoAsistencias">
+                  <option value="">Todos los empleados</option>
+                </select>
+              </label>
+
+              <label class="admin-campo">
+                <span>Estado</span>
+                <select id="filtroEstadoAsistencias">
+                  <option value="">Todos los estados</option>
+                  <option value="puntual">Puntual</option>
+                  <option value="retardo">Retardo</option>
+                  <option value="abierta">Jornada abierta</option>
+                  <option value="completada">Completada</option>
+                  <option value="falta">Falta</option>
+                  <option value="justificado">Justificada</option>
+                  <option value="fuera_de_horario">Fuera de horario</option>
+                  <option value="desconocido">Sin clasificar</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="admin-tabla-contenedor">
+              <table class="admin-tabla">
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Fecha</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Tiempo trabajado</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaAsistencias">
+                  <tr>
+                    <td colspan="7" class="admin-tabla-vacia">Consultando asistencias...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="seccion-empleados" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">PERSONAL</span>
+              <h2>Administración de empleados</h2>
+              <p>Organiza las cuentas, puestos, horarios y sucursales del equipo.</p>
+            </div>
+
+            <button type="button" id="botonNuevoEmpleado" class="admin-boton admin-boton-primario">
+              + Nuevo empleado
+            </button>
+          </div>
+
+          <div class="admin-panel">
+            <div class="admin-filtros">
+              <label class="admin-campo">
+                <span>Buscar empleado</span>
+                <input type="search" id="buscarEmpleados" placeholder="Nombre o correo electrónico">
+              </label>
+
+              <label class="admin-campo">
+                <span>Puesto</span>
+                <select id="filtroRolEmpleados">
+                  <option value="">Todos los puestos</option>
+                  <option value="admin">Administrador</option>
+                  <option value="mesero">Mesero</option>
+                  <option value="cocina">Cocina</option>
+                  <option value="recepcion">Recepción</option>
+                  <option value="repartidor">Repartidor</option>
+                </select>
+              </label>
+
+              <label class="admin-campo">
+                <span>Estado</span>
+                <select id="filtroEstadoEmpleados">
+                  <option value="">Todos</option>
+                  <option value="activo">Activos</option>
+                  <option value="inactivo">Inactivos</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="admin-tabla-contenedor">
+              <table class="admin-tabla">
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Puesto</th>
+                    <th>Horario</th>
+                    <th>Sucursal</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaEmpleados">
+                  <tr>
+                    <td colspan="6" class="admin-tabla-vacia">Consultando empleados...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="seccion-horarios" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">TURNOS</span>
+              <h2>Horarios de trabajo</h2>
+              <p>Configura turnos, días laborales y tolerancias de entrada.</p>
+            </div>
+
+            <button type="button" id="botonNuevoHorario" class="admin-boton admin-boton-primario">
+              + Nuevo horario
+            </button>
+          </div>
+
+          <div id="listaHorarios" class="admin-horarios-grid">
+            <div class="admin-estado-vacio">
+              <strong>Consultando horarios...</strong>
+              <p>Los turnos registrados aparecerán aquí.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="seccion-permisos" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">INCIDENCIAS</span>
+              <h2>Permisos y justificaciones</h2>
+              <p>Documenta faltas, retardos y solicitudes de corrección.</p>
+            </div>
+
+            <button type="button" id="botonNuevoPermiso" class="admin-boton admin-boton-primario">
+              + Nueva incidencia
+            </button>
+          </div>
+
+          <div class="admin-panel">
+            <div class="admin-filtros">
+              <label class="admin-campo">
+                <span>Empleado</span>
+                <select id="filtroEmpleadoPermisos">
+                  <option value="">Todos los empleados</option>
+                </select>
+              </label>
+
+              <label class="admin-campo">
+                <span>Tipo</span>
+                <select id="filtroTipoPermisos">
+                  <option value="">Todos los tipos</option>
+                  <option value="permiso">Permiso autorizado</option>
+                  <option value="falta_justificada">Falta justificada</option>
+                  <option value="falta_injustificada">Falta injustificada</option>
+                  <option value="retardo_justificado">Retardo justificado</option>
+                  <option value="correccion">Corrección de asistencia</option>
+                </select>
+              </label>
+
+              <label class="admin-campo">
+                <span>Estado</span>
+                <select id="filtroEstadoPermisos">
+                  <option value="">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="aprobada">Aprobada</option>
+                  <option value="rechazada">Rechazada</option>
+                  <option value="aplicada">Aplicada</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="admin-tabla-contenedor">
+              <table class="admin-tabla">
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaPermisos">
+                  <tr>
+                    <td colspan="6" class="admin-tabla-vacia">Consultando incidencias...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="seccion-sucursales" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">UBICACIÓN</span>
+              <h2>Sucursales y geolocalización</h2>
+              <p>Define la ubicación autorizada para registrar asistencias.</p>
+            </div>
+          </div>
+
+          <div class="admin-sucursales-grid">
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Ubicación de la sucursal</h3>
+                  <p>Selecciona el punto exacto en el mapa.</p>
+                </div>
+              </div>
+
+              <div id="mapaSucursal" class="admin-mapa"></div>
+
+              <p class="admin-ayuda">
+                La ubicación del mapa es únicamente una referencia visual hasta que guardes las coordenadas correctas.
+              </p>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Configuración de sucursal</h3>
+                  <p>Establece el radio y las condiciones de ubicación.</p>
+                </div>
+              </div>
+
+              <form id="formSucursal" class="admin-formulario">
+                <label class="admin-campo">
+                  <span>Nombre de la sucursal</span>
+                  <input type="text" id="sucursalNombre" required maxlength="100" placeholder="Tacos Orientales Río Grande">
+                </label>
+
+                <div class="admin-formulario-grid">
+                  <label class="admin-campo">
+                    <span>Latitud</span>
+                    <input type="number" id="sucursalLatitud" step="any" min="-90" max="90" required>
+                  </label>
+
+                  <label class="admin-campo">
+                    <span>Longitud</span>
+                    <input type="number" id="sucursalLongitud" step="any" min="-180" max="180" required>
+                  </label>
+                </div>
+
+                <div class="admin-formulario-grid">
+                  <label class="admin-campo">
+                    <span>Radio autorizado (metros)</span>
+                    <input type="number" id="sucursalRadio" min="10" max="2000" value="100" required>
+                  </label>
+
+                  <label class="admin-campo">
+                    <span>Precisión GPS máxima (metros)</span>
+                    <input type="number" id="sucursalPrecision" min="5" max="1000" value="100" required>
+                  </label>
+                </div>
+
+                <label class="admin-opcion">
+                  <input type="checkbox" id="sucursalUbicacionObligatoria" checked>
+                  <span>Exigir ubicación al registrar asistencias</span>
+                </label>
+
+                <button type="submit" id="guardarSucursal" class="admin-boton admin-boton-primario">
+                  Guardar sucursal
+                </button>
+              </form>
+            </article>
+          </div>
+        </section>
+
+        <section id="seccion-reportes" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">ESTADÍSTICAS</span>
+              <h2>Reportes de asistencia</h2>
+              <p>Analiza jornadas, puntualidad, retardos y horas trabajadas.</p>
+            </div>
+
+            <button type="button" id="botonExportarReporte" class="admin-boton admin-boton-secundario" disabled>
+              Exportar a Excel (CSV)
+            </button>
+          </div>
+
+          <div class="admin-panel">
+            <form id="formReportes" class="admin-filtros">
+              <label class="admin-campo">
+                <span>Fecha inicial</span>
+                <input type="date" id="reporteFechaInicio" required>
+              </label>
+
+              <label class="admin-campo">
+                <span>Fecha final</span>
+                <input type="date" id="reporteFechaFin" required>
+              </label>
+
+              <label class="admin-campo">
+                <span>Empleado</span>
+                <select id="reporteEmpleado">
+                  <option value="">Todos los empleados</option>
+                </select>
+              </label>
+
+              <div class="admin-campo admin-campo-accion">
+                <span>Consultar</span>
+                <button type="submit" id="botonGenerarReporte" class="admin-boton admin-boton-primario">
+                  Generar reporte
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="admin-metricas">
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Asistencias</span>
+              <strong id="reporteTotalAsistencias">0</strong>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Puntuales</span>
+              <strong id="reporteTotalPuntuales">0</strong>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Retardos</span>
+              <strong id="reporteTotalRetardos">0</strong>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Faltas registradas</span>
+              <strong id="reporteTotalFaltas">0</strong>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Justificadas</span>
+              <strong id="reporteTotalJustificadas">0</strong>
+            </article>
+
+            <article class="admin-metrica">
+              <span class="admin-metrica-etiqueta">Horas trabajadas</span>
+              <strong id="reporteTotalHoras">0 h 00 min</strong>
+            </article>
+          </div>
+
+          <div class="admin-panel">
+            <div class="admin-panel-encabezado">
+              <div>
+                <h3>Desglose por empleado</h3>
+                <p>Resumen del período seleccionado</p>
+              </div>
+            </div>
+
+            <div class="admin-tabla-contenedor">
+              <table class="admin-tabla">
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Asistencias</th>
+                    <th>Puntuales</th>
+                    <th>Retardos</th>
+                    <th>Faltas</th>
+                    <th>Justificadas</th>
+                    <th>Jornadas completas</th>
+                    <th>Horas trabajadas</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaReportes">
+                  <tr>
+                    <td colspan="8" class="admin-tabla-vacia">Selecciona un período para generar el reporte.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="seccion-auditoria" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">SEGURIDAD</span>
+              <h2>Auditoría administrativa</h2>
+              <p>Consulta los cambios realizados en empleados, horarios y configuraciones.</p>
+            </div>
+
+            <button type="button" id="botonActualizarAuditoria" class="admin-boton admin-boton-secundario">
+              Actualizar historial
+            </button>
+          </div>
+
+          <div class="admin-panel">
+            <div class="admin-filtros">
+              <label class="admin-campo">
+                <span>Buscar movimiento</span>
+                <input type="search" id="buscarAuditoria" placeholder="Acción, administrador o descripción">
+              </label>
+
+              <label class="admin-campo">
+                <span>Categoría</span>
+                <select id="filtroCategoriaAuditoria">
+                  <option value="">Todas las categorías</option>
+                  <option value="empleados">Empleados</option>
+                  <option value="horarios">Horarios</option>
+                  <option value="asistencias">Asistencias</option>
+                  <option value="incidencias">Incidencias</option>
+                  <option value="sucursales">Sucursales</option>
+                  <option value="configuracion">Configuración</option>
+                </select>
+              </label>
+
+              <label class="admin-campo">
+                <span>Fecha</span>
+                <input type="date" id="filtroFechaAuditoria">
+              </label>
+            </div>
+
+            <div class="admin-panel-encabezado">
+              <div>
+                <h3>Historial de movimientos</h3>
+                <p id="contadorAuditoria">0 movimientos visibles</p>
+              </div>
+            </div>
+
+            <div id="listaAuditoria" class="admin-auditoria-lista">
+              <div class="admin-estado-vacio">
+                <strong>Historial administrativo</strong>
+                <p>Los movimientos registrados aparecerán aquí.</p>
+              </div>
+            </div>
+
+            <div class="admin-paginacion">
+              <button type="button" id="botonCargarMasAuditoria" class="admin-boton admin-boton-secundario" hidden>
+                Cargar más movimientos
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="seccion-configuracion" class="admin-seccion" hidden>
+          <div class="admin-seccion-encabezado">
+            <div>
+              <span class="admin-sobretitulo">PREFERENCIAS</span>
+              <h2>Configuración del sistema</h2>
+              <p>Administra las reglas generales de las asistencias.</p>
+            </div>
+          </div>
+
+          <form id="formConfiguracion" class="admin-configuracion-grid">
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Datos generales</h3>
+                  <p>Información principal del sistema</p>
+                </div>
+              </div>
+
+              <label class="admin-campo">
+                <span>Nombre del negocio</span>
+                <input type="text" id="configNombreNegocio" value="Tacos Orientales" required maxlength="100">
+              </label>
+
+              <label class="admin-campo">
+                <span>Zona horaria</span>
+                <select id="configZonaHoraria">
+                  <option value="America/Mexico_City">Hora del centro de México</option>
+                </select>
+              </label>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configSistemaActivo" checked>
+                <span>Mantener activo el registro de asistencias</span>
+              </label>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Reglas de entrada</h3>
+                  <p>Parámetros predeterminados para los turnos</p>
+                </div>
+              </div>
+
+              <div class="admin-formulario-grid">
+                <label class="admin-campo">
+                  <span>Tolerancia (minutos)</span>
+                  <input type="number" id="configTolerancia" min="0" max="180" value="10" required>
+                </label>
+
+                <label class="admin-campo">
+                  <span>Límite de entrada (minutos)</span>
+                  <input type="number" id="configLimiteEntrada" min="0" max="360" value="40" required>
+                </label>
+
+                <label class="admin-campo">
+                  <span>Anticipación de entrada</span>
+                  <input type="number" id="configAnticipacionEntrada" min="0" max="180" value="15" required>
+                </label>
+
+                <label class="admin-campo">
+                  <span>Anticipación de salida</span>
+                  <input type="number" id="configAnticipacionSalida" min="0" max="180" value="0" required>
+                </label>
+
+                <label class="admin-campo">
+                  <span>Margen de salida (minutos)</span>
+                  <input type="number" id="configMargenSalida" min="0" max="720" value="120" required>
+                </label>
+              </div>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configEntradaFueraHorario">
+                <span>Permitir entradas fuera del horario autorizado</span>
+              </label>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configConfirmacionSalida" checked>
+                <span>Solicitar confirmación antes de registrar salida</span>
+              </label>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Geolocalización</h3>
+                  <p>Restricciones generales para registrar asistencias</p>
+                </div>
+              </div>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configUbicacionObligatoria" checked>
+                <span>Exigir ubicación GPS</span>
+              </label>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configValidarPrecision" checked>
+                <span>Validar precisión del GPS</span>
+              </label>
+
+              <label class="admin-campo">
+                <span>Precisión máxima aceptada (metros)</span>
+                <input type="number" id="configPrecisionMaxima" min="5" max="1000" value="100" required>
+              </label>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Seguridad y registros</h3>
+                  <p>Controles de integridad de las jornadas</p>
+                </div>
+              </div>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configSalidaSinEntrada" disabled>
+                <span>Permitir salidas sin entrada previa</span>
+              </label>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configMultiplesEntradas" disabled>
+                <span>Permitir múltiples entradas por jornada</span>
+              </label>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configRegistroSinConexion" disabled>
+                <span>Permitir registro sin conexión</span>
+              </label>
+
+              <label class="admin-opcion">
+                <input type="checkbox" id="configMostrarHistorial" checked>
+                <span>Mostrar historial al empleado</span>
+              </label>
+
+              <label class="admin-campo">
+                <span>Días visibles en el historial</span>
+                <input type="number" id="configDiasHistorial" min="1" max="365" value="30" required>
+              </label>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-encabezado">
+                <div>
+                  <h3>Resumen de reglas</h3>
+                  <p>Configuración seleccionada actualmente</p>
+                </div>
+              </div>
+
+              <div class="admin-resumen-config">
+                <div>
+                  <span>Tolerancia</span>
+                  <strong id="resumenConfigTolerancia">10 min</strong>
+                </div>
+                <div>
+                  <span>Límite de entrada</span>
+                  <strong id="resumenConfigLimite">40 min</strong>
+                </div>
+                <div>
+                  <span>Ubicación GPS</span>
+                  <strong id="resumenConfigUbicacion">Obligatoria</strong>
+                </div>
+                <div>
+                  <span>Estado del sistema</span>
+                  <strong id="resumenConfigSistema">Activo</strong>
+                </div>
+              </div>
+            </article>
+
+            <div class="admin-configuracion-acciones">
+              <button type="button" id="botonRestaurarConfiguracion" class="admin-boton admin-boton-secundario">
+                Descartar cambios
+              </button>
+
+              <button type="button" id="botonValoresPredeterminados" class="admin-boton admin-boton-secundario">
+                Valores predeterminados
+              </button>
+
+              <button type="submit" id="guardarConfiguracion" class="admin-boton admin-boton-primario">
+                Guardar configuración
+              </button>
+            </div>
+          </form>
+        </section>
+
+      </main>
+
+      <footer class="admin-footer">
+        <span>Tacos Orientales · Sistema de Asistencias</span>
+        <span>Administración de personal</span>
+      </footer>
+
+    </div>
+  </div>
+
+  <div class="admin-modal" id="modalEmpleado" hidden aria-hidden="true">
+    <div class="admin-modal-fondo" data-cerrar-modal="modalEmpleado"></div>
+
+    <div class="admin-modal-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloModalEmpleado">
+      <div class="admin-modal-encabezado">
+        <div>
+          <span class="admin-sobretitulo">PERSONAL</span>
+          <h2 id="tituloModalEmpleado">Nuevo empleado</h2>
+        </div>
+        <button type="button" class="admin-modal-cerrar" data-cerrar-modal="modalEmpleado" aria-label="Cerrar">×</button>
+      </div>
+
+      <form id="formEmpleado" class="admin-formulario">
+        <input type="hidden" id="empleadoUid">
+
+        <label class="admin-campo">
+          <span>Nombre completo</span>
+          <input type="text" id="empleadoNombre" minlength="12" maxlength="120" required placeholder="NOMBRE APELLIDO APELLIDO" autocomplete="name">
+        </label>
+
+        <label class="admin-campo">
+          <span>Correo electrónico</span>
+          <input type="email" id="empleadoCorreo" required placeholder="empleado@correo.com" autocomplete="email">
+        </label>
+
+        <label class="admin-campo">
+          <span>Teléfono</span>
+          <input type="tel" id="empleadoTelefono" maxlength="15" inputmode="tel" placeholder="Número de contacto">
+        </label>
+
+        <div class="admin-formulario-grid">
+          <label class="admin-campo">
+            <span>Puesto</span>
+            <select id="empleadoRol" required>
+              <option value="">Seleccionar puesto</option>
+              <option value="mesero">Mesero</option>
+              <option value="cocina">Cocina</option>
+              <option value="recepcion">Recepción</option>
+              <option value="repartidor">Repartidor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+
+          <label class="admin-campo">
+            <span>Estado</span>
+            <select id="empleadoEstado">
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="admin-formulario-grid">
+          <label class="admin-campo">
+            <span>Horario asignado</span>
+            <select id="empleadoHorario">
+              <option value="">Sin horario asignado</option>
+            </select>
+          </label>
+
+          <label class="admin-campo">
+            <span>Sucursal</span>
+            <select id="empleadoSucursal">
+              <option value="">Sin sucursal asignada</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="admin-modal-acciones">
+          <button type="button" class="admin-boton admin-boton-secundario" data-cerrar-modal="modalEmpleado">
+            Cancelar
+          </button>
+          <button type="submit" id="guardarEmpleado" class="admin-boton admin-boton-primario">
+            Guardar empleado
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="modalHorario" hidden aria-hidden="true">
+    <div class="admin-modal-fondo" data-cerrar-modal="modalHorario"></div>
+
+    <div class="admin-modal-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloModalHorario">
+      <div class="admin-modal-encabezado">
+        <div>
+          <span class="admin-sobretitulo">TURNOS</span>
+          <h2 id="tituloModalHorario">Nuevo horario</h2>
+        </div>
+        <button type="button" class="admin-modal-cerrar" data-cerrar-modal="modalHorario" aria-label="Cerrar">×</button>
+      </div>
+
+      <form id="formHorario" class="admin-formulario">
+        <input type="hidden" id="horarioId">
+
+        <label class="admin-campo">
+          <span>Nombre del horario</span>
+          <input type="text" id="horarioNombre" required maxlength="100" placeholder="Turno vespertino">
+        </label>
+
+        <div class="admin-formulario-grid">
+          <label class="admin-campo">
+            <span>Hora de entrada</span>
+            <input type="time" id="horarioEntrada" required>
+          </label>
+
+          <label class="admin-campo">
+            <span>Hora de salida</span>
+            <input type="time" id="horarioSalida" required>
+          </label>
+        </div>
+
+        <div class="admin-formulario-grid">
+          <label class="admin-campo">
+            <span>Tolerancia (minutos)</span>
+            <input type="number" id="horarioTolerancia" min="0" max="180" value="10" required>
+          </label>
+
+          <label class="admin-campo">
+            <span>Límite de entrada (minutos)</span>
+            <input type="number" id="horarioLimite" min="0" max="360" value="40" required>
+          </label>
+        </div>
+
+        <fieldset class="admin-campo">
+          <legend>Días laborales</legend>
+          <div class="admin-dias-grid">
+            <label><input type="checkbox" name="horarioDia" value="1"> Lunes</label>
+            <label><input type="checkbox" name="horarioDia" value="2"> Martes</label>
+            <label><input type="checkbox" name="horarioDia" value="3"> Miércoles</label>
+            <label><input type="checkbox" name="horarioDia" value="4"> Jueves</label>
+            <label><input type="checkbox" name="horarioDia" value="5"> Viernes</label>
+            <label><input type="checkbox" name="horarioDia" value="6"> Sábado</label>
+            <label><input type="checkbox" name="horarioDia" value="0"> Domingo</label>
+          </div>
+        </fieldset>
+
+        <label class="admin-opcion">
+          <input type="checkbox" id="horarioActivo" checked>
+          <span>Horario activo</span>
+        </label>
+
+        <div class="admin-modal-acciones">
+          <button type="button" class="admin-boton admin-boton-secundario" data-cerrar-modal="modalHorario">
+            Cancelar
+          </button>
+          <button type="submit" id="guardarHorario" class="admin-boton admin-boton-primario">
+            Guardar horario
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="modalIncidencia" hidden aria-hidden="true">
+    <div class="admin-modal-fondo" data-cerrar-modal="modalIncidencia"></div>
+
+    <div class="admin-modal-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloModalIncidencia">
+      <div class="admin-modal-encabezado">
+        <div>
+          <span class="admin-sobretitulo">INCIDENCIAS</span>
+          <h2 id="tituloModalIncidencia">Nueva incidencia</h2>
+        </div>
+        <button type="button" class="admin-modal-cerrar" data-cerrar-modal="modalIncidencia" aria-label="Cerrar">×</button>
+      </div>
+
+      <form id="formIncidencia" class="admin-formulario">
+        <label class="admin-campo">
+          <span>Empleado</span>
+          <select id="incidenciaEmpleado" required>
+            <option value="">Seleccionar empleado</option>
+          </select>
+        </label>
+
+        <div class="admin-formulario-grid">
+          <label class="admin-campo">
+            <span>Tipo de incidencia</span>
+            <select id="incidenciaTipo" required>
+              <option value="permiso">Permiso autorizado</option>
+              <option value="falta_justificada">Falta justificada</option>
+              <option value="falta_injustificada">Falta injustificada</option>
+              <option value="retardo_justificado">Retardo justificado</option>
+              <option value="correccion">Corrección de asistencia</option>
+            </select>
+          </label>
+
+          <label class="admin-campo">
+            <span>Fecha de jornada</span>
+            <input type="date" id="incidenciaFecha" required>
+          </label>
+        </div>
+
+        <label class="admin-campo">
+          <span>Motivo o explicación</span>
+          <textarea id="incidenciaMotivo" rows="5" minlength="10" maxlength="1000" required placeholder="Describe el motivo de la incidencia..."></textarea>
+        </label>
+
+        <p class="admin-ayuda">
+          El registro de una incidencia quedará sujeto a las validaciones y al historial de auditoría del servidor.
+        </p>
+
+        <div class="admin-modal-acciones">
+          <button type="button" class="admin-boton admin-boton-secundario" data-cerrar-modal="modalIncidencia">
+            Cancelar
+          </button>
+          <button type="submit" id="guardarIncidencia" class="admin-boton admin-boton-primario">
+            Registrar incidencia
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminToast" class="admin-toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
