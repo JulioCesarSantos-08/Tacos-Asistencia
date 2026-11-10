@@ -325,11 +325,11 @@ function renderizarEmpleados() {
 function actualizarMetricaEmpleados() {
   const metrica = $("metricaEmpleados");
 
-  if (metrica) {
-    metrica.textContent = empleados.filter(
-      empleado => empleado.activo === true
-    ).length;
+  if (!metrica) {
+    return;
   }
+
+  metrica.textContent = empleados.length;
 }
 
 async function cargarEmpleados() {

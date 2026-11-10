@@ -710,7 +710,10 @@ function configurarInterfaz() {
 }
 
 async function cargarResumenDashboard() {
-  await inicializarModulo("asistencias");
+  await Promise.all([
+    inicializarModulo("asistencias"),
+    inicializarModulo("empleados")
+  ]);
 }
 
 function mostrarPantallaCarga(mostrar) {
