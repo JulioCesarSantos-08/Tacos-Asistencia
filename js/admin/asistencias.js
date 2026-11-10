@@ -522,7 +522,7 @@ async function cargarAsistencias() {
     const resultado = await getDocs(
       query(
         collection(db, "asistencias"),
-        orderBy("fechaJornada", "desc"),
+        orderBy("fechaInicioProgramada", "desc"),
         limit(LIMITE_CONSULTA)
       )
     );
