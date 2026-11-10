@@ -1,10 +1,5 @@
 
 import {
-  getFunctions,
-  httpsCallable
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-functions.js";
-
-import {
   collection,
   doc,
   getDoc,
@@ -13,7 +8,9 @@ import {
   where,
   orderBy,
   limit,
-  Timestamp
+  Timestamp,
+  runTransaction,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import {
@@ -23,18 +20,6 @@ import {
 } from "./firebase.js";
 
 const ZONA_HORARIA = "America/Mexico_City";
-
-const functions = getFunctions(app, "us-central1");
-
-const registrarEntradaRemota = httpsCallable(
-  functions,
-  "registrarEntrada"
-);
-
-const registrarSalidaRemota = httpsCallable(
-  functions,
-  "registrarSalida"
-);
 
 const ESTADOS = Object.freeze({
   PUNTUAL: "puntual",
@@ -617,26 +602,164 @@ async function prepararRegistro(empleado) {
   };
 }
 
+function fechaTurnoActual(horario, ahora) {
+  const hoy = obtenerClaveFecha(ahora);
+  const minutos = horaAMinutos(horario.horaEntrada);
+  const minutosSalida = horaAMinutos(horario.horaSalida);
+
+  if (minutosSalida <= minutos) {
+    const partes = new Intl.DateTimeFormat("en-GB", {
+      timeZone: ZONA_HORARIA,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(ahora);
+
+    const valores = Object.fromEntries(
+      partes.filter(p => p.type !== "literal").map(p => [p.type, p.value])
+    );
+
+    const actual = Number(valores.hour) * 60 + Number(valores.minute);
+
+    if (actual < minutosSalida) {
+      const [a, m, d] = hoy.split("-").map(Number);
+      return new Date(Date.UTC(a, m - 1, d - 1)).toISOString().slice(0, 10);
+    }
+  }
+
+  return hoy;
+}
+
+function obtenerMinutosActuales() {
+  const partes = new Intl.DateTimeFormat("en-GB", {
+    timeZone: ZONA_HORARIA,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(new Date());
+
+  const valores = Object.fromEntries(
+    partes.filter(p => p.type !== "literal").map(p => [p.type, p.value])
+  );
+
+  return Number(valores.hour) * 60 + Number(valores.minute);
+}
+
 async function registrarEntrada(empleado) {
   const datos = await prepararRegistro(empleado);
+  const usuario = obtenerUsuario();
 
-  const respuesta = await registrarEntradaRemota({
-    ubicacion: obtenerDatosUbicacion(datos.ubicacion)
+  if (datos.configuracion.sistemaActivo === false) {
+    throw crearError("asistencia/desactivada", "El registro de asistencias esta desactivado.");
+  }
+
+  const ahora = new Date();
+  const fechaTurno = fechaTurnoActual(datos.horario, ahora);
+  const entradaProgramada = horaAMinutos(datos.horario.horaEntrada);
+  const minutosActuales = obtenerMinutosActuales();
+  const diferencia = minutosActuales - entradaProgramada;
+  const tolerancia = Number(datos.horario.toleranciaMinutos ?? datos.configuracion.toleranciaMinutos ?? 10);
+  const limite = Number(datos.horario.limiteEntradaMinutos ?? datos.configuracion.limiteEntradaMinutos ?? 40);
+  const anticipacion = Number(datos.configuracion.anticipacionEntradaMinutos ?? 15);
+
+  if (
+    datos.configuracion.permitirEntradaFueraHorario !== true &&
+    (diferencia < -anticipacion || diferencia > limite)
+  ) {
+    throw crearError(
+      "asistencia/fuera-de-horario",
+      "Tu horario de entrada es " + datos.horario.horaEntrada +
+      ". El registro no esta disponible en este momento."
+    );
+  }
+
+  const jornadaActiva = await obtenerJornadaActiva(usuario.uid);
+
+  if (jornadaActiva) {
+    throw crearError("asistencia/entrada-duplicada", "Ya tienes una jornada activa.");
+  }
+
+  const referencia = doc(db, "asistencias", usuario.uid + "_" + fechaTurno);
+  const minutosRetardo = Math.max(0, diferencia);
+  const estadoAsistencia = diferencia > limite
+    ? "fuera_de_plazo"
+    : diferencia > tolerancia
+      ? "retardo"
+      : "puntual";
+
+  await runTransaction(db, async transaccion => {
+    const existente = await transaccion.get(referencia);
+
+    if (existente.exists()) {
+      throw crearError("asistencia/duplicada", "Ya registraste entrada para este turno.");
+    }
+
+    transaccion.set(referencia, {
+      empleadoId: usuario.uid,
+      empleadoUid: usuario.uid,
+      nombreCompleto: empleado.nombreCompleto || "",
+      horarioId: datos.horario.id,
+      sucursalId: datos.sucursal.id,
+      fechaTurno,
+      fechaInicioProgramada: Timestamp.fromDate(ahora),
+      horaEntradaProgramada: datos.horario.horaEntrada,
+      horaSalidaProgramada: datos.horario.horaSalida,
+      entrada: serverTimestamp(),
+      salida: null,
+      estadoAsistencia,
+      estadoJornada: "en_curso",
+      minutosRetardo,
+      ubicacionEntrada: obtenerDatosUbicacion(datos.ubicacion),
+      creadoEn: serverTimestamp(),
+      actualizadoEn: serverTimestamp()
+    });
   });
 
-  return respuesta.data;
+  return {
+    correcto: true,
+    estadoAsistencia,
+    estadoJornada: "en_curso",
+    fechaTurno
+  };
 }
 
 async function registrarSalida(empleado) {
   const datos = await prepararRegistro(empleado);
+  const usuario = obtenerUsuario();
+  const jornada = await obtenerJornadaActiva(usuario.uid);
 
-  const respuesta = await registrarSalidaRemota({
-    ubicacion: obtenerDatosUbicacion(datos.ubicacion)
+  if (!jornada) {
+    throw crearError("asistencia/sin-entrada", "Primero debes registrar tu entrada.");
+  }
+
+  const referencia = doc(db, "asistencias", jornada.id);
+
+  await runTransaction(db, async transaccion => {
+    const existente = await transaccion.get(referencia);
+
+    if (!existente.exists()) {
+      throw crearError("asistencia/no-encontrada", "No se encontro la jornada.");
+    }
+
+    const registro = existente.data();
+
+    if (registro.empleadoId !== usuario.uid || registro.estadoJornada !== "en_curso") {
+      throw crearError("asistencia/jornada-cerrada", "Esta jornada ya fue cerrada.");
+    }
+
+    transaccion.update(referencia, {
+      salida: serverTimestamp(),
+      estadoJornada: "finalizada",
+      ubicacionSalida: obtenerDatosUbicacion(datos.ubicacion),
+      actualizadoEn: serverTimestamp()
+    });
   });
 
-  return respuesta.data;
+  return {
+    correcto: true,
+    estadoJornada: "finalizada"
+  };
 }
-
 function normalizarAsistencia(documento) {
   return {
     id: documento.id,
@@ -656,14 +779,13 @@ async function obtenerJornadaActiva(uid) {
 
   const consulta = query(
     collection(db, "asistencias"),
-    where("empleadoId", "==", uid),
-    where("estadoJornada", "==", "en_curso"),
-    limit(2)
+    where("empleadoId", "==", uid)
   );
 
   const resultado = await getDocs(consulta);
 
-  if (resultado.size > 1) {
+  const activas = resultado.docs.filter(d => d.data().estadoJornada === "en_curso");
+  if (activas.length > 1) {
     throw crearError(
       "asistencia/jornadas-duplicadas",
       "Se encontraron jornadas activas duplicadas. Comunícate con el administrador."
@@ -674,7 +796,7 @@ async function obtenerJornadaActiva(uid) {
     return null;
   }
 
-  return normalizarAsistencia(resultado.docs[0]);
+  return normalizarAsistencia(activas[0]);
 }
 
 async function obtenerUltimasAsistencias(uid, cantidad = 5) {
@@ -689,14 +811,16 @@ async function obtenerUltimasAsistencias(uid, cantidad = 5) {
 
   const consulta = query(
     collection(db, "asistencias"),
-    where("empleadoId", "==", uid),
-    orderBy("fechaInicioProgramada", "desc"),
-    limit(Math.min(Math.max(1, cantidad), 50))
+    where("empleadoId", "==", uid)
   );
 
   const resultado = await getDocs(consulta);
 
-  return resultado.docs.map(normalizarAsistencia);
+  return resultado.docs.map(normalizarAsistencia).sort((a, b) => {
+    const fa = convertirFecha(a.fechaInicioProgramada)?.getTime() || 0;
+    const fb = convertirFecha(b.fechaInicioProgramada)?.getTime() || 0;
+    return fb - fa;
+  });
 }
 
 async function obtenerAsistenciasMes(uid, mes) {
@@ -723,15 +847,16 @@ async function obtenerAsistenciasMes(uid, mes) {
 
   const consulta = query(
     collection(db, "asistencias"),
-    where("empleadoId", "==", uid),
-    where("fechaTurno", ">=", inicio),
-    where("fechaTurno", "<", fin),
-    orderBy("fechaTurno", "desc")
+    where("empleadoId", "==", uid)
   );
 
   const resultado = await getDocs(consulta);
 
-  return resultado.docs.map(normalizarAsistencia);
+  return resultado.docs.map(normalizarAsistencia).sort((a, b) => {
+    const fa = convertirFecha(a.fechaInicioProgramada)?.getTime() || 0;
+    const fb = convertirFecha(b.fechaInicioProgramada)?.getTime() || 0;
+    return fb - fa;
+  });
 }
 
 function calcularHorasTrabajadas(asistencia) {
